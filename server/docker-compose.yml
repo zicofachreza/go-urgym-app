@@ -1,0 +1,46 @@
+services:
+  # === User DB ===
+  postgres-user:
+    image: postgres:16
+    container_name: postgres-user
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: go_user_urgym_app_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_user_data:/var/lib/postgresql/data
+    networks:
+      - gym-network
+
+  # === User Service (Go) ===
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: development
+    command: air
+    volumes:
+      - ./user-service:/app
+    env_file:
+      - ./user-service/.env
+    depends_on:
+      postgres-user:
+        condition: service_started
+    ports:
+      - "3001:3001"
+    networks:
+      - gym-network
+
+networks:
+  gym-network:
+
+volumes:
+  postgres_user_data:
